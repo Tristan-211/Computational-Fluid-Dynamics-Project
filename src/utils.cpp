@@ -145,14 +145,6 @@ void meshgrid(const std::vector<double>& x,
     }
 }
 
-std::vector<std::vector<double>> reshape1DTo2D(const std::vector<double>& flat, size_t rows, size_t cols) {
-    if (flat.size() != rows * cols) throw std::runtime_error("reshape1DTo2D: size mismatch");
-    std::vector<std::vector<double>> result(rows, std::vector<double>(cols));
-    for (size_t i = 0; i < rows; ++i)
-        for (size_t j = 0; j < cols; ++j)
-            result[i][j] = flat[i * cols + j];  // row-major layout
-    return result;
-}
 
 
 std::vector<std::vector<double>> elementwiseAdd(const std::vector<std::vector<double>>& A,const std::vector<std::vector<double>>& B) {
@@ -177,14 +169,27 @@ std::vector<std::vector<double>> elementwiseSubtract(const std::vector<std::vect
     return C;
 }
 
-std::vector<std::vector<double>> elementwiseMultiply(const std::vector<std::vector<double>>& A,const std::vector<std::vector<double>>& B) {
-    
-    size_t rows = A.size(), cols = A[0].size();
+std::vector<std::vector<double>> elementwiseMultiply(const std::vector<std::vector<double>>& A,
+                                                     const std::vector<std::vector<double>>& B) {
+    if (A.empty() || B.empty())
+        throw std::runtime_error("elementwiseMultiply: input matrices must not be empty.");
+
+    if (A.size() != B.size())
+        throw std::runtime_error("elementwiseMultiply: matrices have different number of rows.");
+
+    size_t rows = A.size();
+    size_t cols = A[0].size();
+
+    for (size_t i = 0; i < rows; ++i) {
+        if (A[i].size() != cols || B[i].size() != cols)
+            throw std::runtime_error("elementwiseMultiply: matrices are not rectangular or sizes do not match.");
+    }
+
     std::vector<std::vector<double>> C(rows, std::vector<double>(cols));
-    
     for (size_t i = 0; i < rows; ++i)
         for (size_t j = 0; j < cols; ++j)
             C[i][j] = A[i][j] * B[i][j];
+
     return C;
 }
 
@@ -210,66 +215,6 @@ std::vector<std::vector<double>> scalarMultiply(const std::vector<std::vector<do
     return C;
 }
 
-
-std::vector<std::vector<bool>> makeMask(const std::vector<std::vector<double>>& XR,
-                                        const std::vector<std::vector<double>>& YR,
-                                        double IBlh,
-                                        double IBwh) {
-    size_t M = XR.size();
-    size_t N = XR[0].size();
-    std::vector<std::vector<bool>> mask(M, std::vector<bool>(N, false));
-
-    for (size_t i = 0; i < M; ++i)
-        for (size_t j = 0; j < N; ++j)
-            if (std::fabs(XR[i][j]) <= IBlh && std::fabs(YR[i][j]) < IBwh)
-                mask[i][j] = true;
-
-    return mask;
-}
-
-
-void applyMaskSet(std::vector<std::vector<double>>& target,
-                  const std::vector<std::vector<bool>>& mask,
-                  double value) {
-    size_t M = target.size();
-    size_t N = target[0].size();
-    for (size_t i = 0; i < M; ++i)
-        for (size_t j = 0; j < N; ++j)
-            if (mask[i][j])
-                target[i][j] = value;
-}
-
-
-void checkRotorBounds(const std::vector<Rotor>& rotors, const Mesh& mesh) {
-    double xmin = mesh.xf.front();
-    double xmax = mesh.xf.back();
-    double ymin = mesh.yf.front();
-    double ymax = mesh.yf.back();
-
-    for (size_t i = 0; i < rotors.size(); ++i) {
-        const Rotor& r = rotors[i];
-
-        double x0 = r.center[0];
-        double y0 = r.center[1];
-
-        double left   = x0 - r.halfLength;
-        double right  = x0 + r.halfLength;
-        double bottom = y0 - r.halfWidth;
-        double top    = y0 + r.halfWidth;
-
-        if (left < xmin || right > xmax || bottom < ymin || top > ymax) {
-            std::ostringstream msg;
-            msg << "Rotor " << i << " exceeds mesh bounds:\n"
-                << "  Rotor bounds: ["
-                << left << ", " << right << "] x ["
-                << bottom << ", " << top << "]\n"
-                << "  Mesh bounds: ["
-                << xmin << ", " << xmax << "] x ["
-                << ymin << ", " << ymax << "]";
-            throw std::runtime_error(msg.str());
-        }
-    }
-}
 
 std::vector<std::vector<double>> Residual(
     const std::vector<std::vector<double>>& phi,
@@ -327,3 +272,49 @@ double maxAbs(const std::vector<std::vector<double>>& mat) {
     }
     return max_val;
 }
+
+
+
+void printTimeProgress(double t, double totalTime) {
+    const int barWidth = 50;
+    double progress = std::min(t / totalTime, 1.0);
+    int pos = static_cast<int>(barWidth * progress);
+
+    std::cout << "\r[";
+    for (int i = 0; i < barWidth; ++i) {
+        if (i < pos) std::cout << "=";
+        else if (i == pos) std::cout << ">";
+        else std::cout << " ";
+    }
+    std::cout << "] " << std::setw(3) << static_cast<int>(progress * 100) << "% ";
+    std::cout << "t = " << std::fixed << std::setprecision(3) << t << "/" << totalTime;
+    std::cout.flush();
+}
+
+
+std::vector<std::vector<double>> zeros(size_t rows, size_t cols) {
+    return std::vector<std::vector<double>>(rows, std::vector<double>(cols, 0.0));
+}
+
+std::vector<std::vector<double>> matMul(
+    const std::vector<std::vector<double>>& A,
+    const std::vector<std::vector<double>>& B)
+{
+    size_t rowsA = A.size();
+    size_t colsA = A[0].size();
+    size_t rowsB = B.size();
+    size_t colsB = B[0].size();
+
+    if (colsA != rowsB)
+        throw std::runtime_error("matMul: incompatible dimensions");
+
+    std::vector<std::vector<double>> result(rowsA, std::vector<double>(colsB, 0.0));
+
+    for (size_t i = 0; i < rowsA; ++i)
+        for (size_t j = 0; j < colsB; ++j)
+            for (size_t k = 0; k < colsA; ++k)
+                result[i][j] += A[i][k] * B[k][j];
+
+    return result;
+}
+

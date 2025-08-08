@@ -11,6 +11,7 @@
 #include "solver.h"
 #include "multi_grid.h"
 #include "hyperbolic.h"
+#include "IB.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -27,12 +28,13 @@ int main() {
     config.Ly = 3.0;
     config.Re = 200.0;
     config.Pr = 3.0;
-    config.totalTime = {5.0};
+    config.totalTime = {3};
     config.CFL = 0.4;
     config.h = config.Lx/config.M;
     config.dt = 0.01; //value for intialization only calc dt at start of solver loop
     config.enableEllipticSolver = true;
     config.enableHyperbolicSolver = true;
+    config.enableRotors = true;
 
 
     // Boundary Condition Structs 
@@ -147,13 +149,32 @@ int main() {
 
     // Initialize Solution Vars
     Solution sol = initializeSolution(mesh,config);
+    initIBMeshU(mesh,config,sol);
+
+
+
+    //saveMatrixToFile(sol.u, "u.csv");
+    //saveMatrixToFile(sol.v, "v.csv");
+    //saveMatrixToFile(sol.T, "T.csv");
+
+
+
 
     runSolver(sol, mesh, config);
 
+    
+
+
+    //calcSourceIB(sol,mesh,config,t);
+
+    //saveMatrixToFile(sol.Qu, "Qu.csv");
+    //saveMatrixToFile(sol.Qv, "Qv.csv");
+    //saveMatrixToFile(sol.QT, "QT.csv");
 
     saveMatrixToFile(sol.u, "u.csv");
     saveMatrixToFile(sol.v, "v.csv");
     saveMatrixToFile(sol.T, "T.csv");
+
 
 
 

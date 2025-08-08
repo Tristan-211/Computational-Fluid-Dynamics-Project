@@ -19,7 +19,6 @@ bool calcDt(double t, double outputTime, SolverConfig& config, const Solution& s
 
 void meshgrid(const std::vector<double>& x,const std::vector<double>& y,std::vector<std::vector<double>>& X,std::vector<std::vector<double>>& Y); //same as meshgrid function from MATLAB
 
-std::vector<std::vector<double>> reshape1DTo2D(const std::vector<double>& flat, size_t rows, size_t cols); //reshapes a 1D vector into a 2d array of size rows x cols 
 
 //equivlent to MATLAB element wise matrix operations 
 std::vector<std::vector<double>> elementwiseAdd(const std::vector<std::vector<double>>& A,const std::vector<std::vector<double>>& B);
@@ -28,18 +27,15 @@ std::vector<std::vector<double>> elementwiseMultiply(const std::vector<std::vect
 std::vector<std::vector<double>> elementwiseDivide(const std::vector<std::vector<double>>& A,const std::vector<std::vector<double>>& B);
 std::vector<std::vector<double>> scalarMultiply(const std::vector<std::vector<double>>& A,double scalar);
 
-
-//Mask Functions 
-std::vector<std::vector<bool>> makeMask(const std::vector<std::vector<double>>& XR,const std::vector<std::vector<double>>& YR,double IBlh,double IBwh);
-void applyMaskSet(std::vector<std::vector<double>>& target,const std::vector<std::vector<bool>>& mask,double value);
-
-//checks that rotors fit in bounds 
-void checkRotorBounds(const std::vector<Rotor>& rotors, const Mesh& mesh);
-
-
 // residual functions 
 double RelativeResidualNorm(const std::vector<std::vector<double>>& phi,const std::vector<std::vector<double>>& f,double h);
 std::vector<std::vector<double>> Residual(const std::vector<std::vector<double>>& phi,const std::vector<std::vector<double>>& f,double h);
 
 double maxAbs(const std::vector<std::vector<double>>& mat);
 
+std::vector<std::vector<double>> zeros(size_t rows, size_t cols);
+
+void printTimeProgress(double t, double totalTime);
+
+//matrix multiplier
+std::vector<std::vector<double>> matMul(const std::vector<std::vector<double>>& A,const std::vector<std::vector<double>>& B);

@@ -2,7 +2,7 @@
 ifeq ($(OS),Windows_NT)
     # Use MSVC on Windows
     CXX = cl
-    CXXFLAGS = /std:c++17 /nologo /EHsc /W4 /Iinclude /fp:precise /fp:strict
+    CXXFLAGS = /std:c++17 /nologo /EHsc /W4 /Iinclude /fp:strict
     RM = rm -rf
     MKDIR = mkdir -p $(OBJ_DIR)
     OUT_EXT = .exe

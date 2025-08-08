@@ -6,6 +6,7 @@
 #include "solution.h"
 #include "bc.h"
 #include "hyperbolic.h"
+#include "IB.h"
 
 using Array2D = std::vector<std::vector<double>>;
 
@@ -14,25 +15,27 @@ void runSolver(Solution& sol, const Mesh& mesh, SolverConfig& config) {
     auto u_old = sol.u;
     auto v_old = sol.v;
     Array2D Hu, Hv, Hu_nm1, Hv_nm1, HT;
-
+    double finalTime = config.totalTime.back();  
 
     for (double tf : config.totalTime) {
         bool flag = false;
-        int test = 1;
+        //int test = 1;
 
         while (t < tf) {
-        //while (test <= 2) {
+        //while (test <= 1) {
 
             flag = calcDt(t, tf, config, sol);  // sets config.dt and flag
-            std::cout << t << std::endl;
+            
 
-            sol.Qu = Array2D(config.M + 1, std::vector<double>(config.N + 2, 0.0));
-            sol.Qv = Array2D(config.M + 2, std::vector<double>(config.N + 1, 0.0));
-            sol.QT = Array2D(config.M + 6, std::vector<double>(config.N + 6, 0.0));
+            sol.Qu = zeros(config.M + 1,config.N + 2);
+            sol.Qv = zeros(config.M + 2,config.N + 1);
+            sol.QT = zeros(config.M + 6,config.N + 6);
 
-            //calcsourceIB(sol,config,mesh,t);
+            if (config.enableRotors)
+                calcSourceIB(sol,mesh,config,t);
+
             auto QT1 = sol.QT; //store for temp ADI
-            auto QT2 = sol.QT; //store for temp ADI  
+            auto QT2 = sol.QT; //store for temp ADI 
 
             if (config.enableHyperbolicSolver) {
 
@@ -61,9 +64,14 @@ void runSolver(Solution& sol, const Mesh& mesh, SolverConfig& config) {
             parabolic_CN1_u(sol, mesh, config, t);
             parabolic_CN1_v(sol, mesh, config, t);
 
-            sol.Qu = Array2D(config.M + 1, std::vector<double>(config.N + 2, 0.0));
-            sol.Qv = Array2D(config.M + 2, std::vector<double>(config.N + 1, 0.0));
-            //calcsourceIB(sol,config,mesh,t+dt/2);
+            sol.Qu = zeros(config.M + 1,config.N + 2);
+            sol.Qv = zeros(config.M + 2,config.N + 1);
+            sol.QT = zeros(config.M + 6,config.N + 6);
+            
+            if (config.enableRotors)
+                calcSourceIB(sol,mesh,config,t+config.dt/2.0);
+
+            
 
             if (config.enableHyperbolicSolver) {
 
@@ -93,8 +101,12 @@ void runSolver(Solution& sol, const Mesh& mesh, SolverConfig& config) {
             //perform ADI for T 
             parabolic_CN1_T(sol, mesh, config, t);
 
-            //calcsourceIB(sol,config,mesh,t+dt/2);
-            //QT2 = sol.QT; //store for temp ADI 
+            if (config.enableRotors)
+                calcSourceIB(sol,mesh,config,t+config.dt/2.0);
+            
+            sol.QT = zeros(config.M + 6,config.N + 6); 
+            QT2 = sol.QT; //store for temp ADI
+
 
             if (config.enableHyperbolicSolver) {  //calculate T hyperbolic term using solve velocity
                 sol.QT = elementwiseAdd(QT2,HT);
@@ -122,24 +134,19 @@ void runSolver(Solution& sol, const Mesh& mesh, SolverConfig& config) {
 
 
             }
-            //saveMatrixToFile(sol.Qu, "Qu.csv");
-            //saveMatrixToFile(Hu, "Hu.csv");
-            //saveMatrixToFile(Hv, "Hv.csv");
-
-            //auto max_u = maxAbs(sol.u);
-            //std::cout << max_u << std::endl;
 
 
             t += config.dt;
-            //std::cout << t <<std::endl;
+            printTimeProgress(t, finalTime);
 
-            test += 1;
+            //test += 1;
 
             if (flag){
-                std::cout << "Final time reached t =  "<< t << std::endl;
+                std::cout << std::endl << "Flag time reached t =  "<< t << std::endl;
             }
         }
     }
+    std::cout << std::endl;
 }
 
 Solution initializeSolution(const Mesh& mesh, const SolverConfig& config) {

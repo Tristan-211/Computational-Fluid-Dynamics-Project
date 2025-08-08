@@ -30,9 +30,9 @@ struct Rotor {
     std::vector<std::vector<double>> IBvelv;
     std::vector<std::vector<double>> IBtempT;
 
-    std::vector<std::array<double, 2>> meshIBut_flat;
-    std::vector<std::array<double, 2>> meshIBvt_flat;
-    std::vector<std::array<double, 2>> meshIBTt_flat;
+    std::vector<std::vector<double>> meshIBut_flat;
+    std::vector<std::vector<double>> meshIBvt_flat;
+    std::vector<std::vector<double>> meshIBTt_flat;
 
 };
 
@@ -51,4 +51,5 @@ struct SolverConfig {
     // solver type
     bool enableEllipticSolver = false;
     bool enableHyperbolicSolver = false;
+    bool enableRotors = false;
 };
