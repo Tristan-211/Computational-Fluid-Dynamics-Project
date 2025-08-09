@@ -1,0 +1,12 @@
+# IDE caches
+/.vs/
+**/.vs/
+*.vsidx
+
+
+# Build artifacts (optional)
+build/
+bin/
+*.obj
+*.o
+*.out

@@ -21,6 +21,7 @@ std::pair<Array2D, Array2D> hyperbolic_uv_2D(
     int Nu = static_cast<int>(u[0].size());
     int Mv = static_cast<int>(v.size());
     int Nv = static_cast<int>(v[0].size());
+    const double invh = 1.0 / h;
 
     // === Interpolated velocities ===
     Array2D ucen(Mu - 1, std::vector<double>(Nu));
@@ -47,8 +48,11 @@ std::pair<Array2D, Array2D> hyperbolic_uv_2D(
     // === Compute duu and duvx ===
     Array2D duu(Mu - 2, std::vector<double>(Nu - 2));
     for (int i = 0; i < Mu - 2; ++i)
-        for (int j = 1; j < Nu - 1; ++j)
-            duu[i][j - 1] = (std::pow(ucen[i + 1][j], 2) - std::pow(ucen[i][j], 2)) / h;
+        for (int j = 1; j < Nu - 1; ++j){
+            const double u0 = ucen[i][j];
+            const double u1 = ucen[i + 1][j];
+            duu[i][j - 1] = (u1 + u0) * (u1 - u0) * invh;
+        }
 
     Array2D duvx(Mu - 2, std::vector<double>(Nu - 2));
     for (int i = 0; i < Mu - 2; ++i)
@@ -64,9 +68,12 @@ std::pair<Array2D, Array2D> hyperbolic_uv_2D(
     // === Compute dvv and duvy ===
     Array2D dvv(Mv - 2, std::vector<double>(Nv - 2));
     for (int i = 1; i < Mv - 1; ++i)
-        for (int j = 0; j < Nv - 2; ++j)
-            dvv[i - 1][j] = (std::pow(vcen[i][j + 1], 2) - std::pow(vcen[i][j], 2)) / h;
-
+        for (int j = 0; j < Nv - 2; ++j){
+            const double v0 = vcen[i][j];
+            const double v1 = vcen[i][j + 1];
+            dvv[i - 1][j] = (v1 + v0) * (v1 - v0) * invh;
+        }
+        
     Array2D duvy(Mv - 2, std::vector<double>(Nv - 2));
     for (int i = 0; i < Mv - 2; ++i)
         for (int j = 0; j < Nv - 2; ++j)
@@ -82,26 +89,43 @@ std::pair<Array2D, Array2D> hyperbolic_uv_2D(
 }
 
 
-double psiWENO(double a, double b, double c, double d) {
-    constexpr double eps = 1e-6;
+double psiWENO(double a, double b, double c, double d) noexcept {
+    constexpr double eps   = 1e-6;
+    constexpr double c13   = 13.0;
+    constexpr double c3    = 3.0;
+    constexpr double c6    = 6.0;
+    constexpr double inv3  = 1.0 / 3.0;
+    constexpr double inv6  = 1.0 / 6.0;
 
-    // Smoothness indicators
-    double IS0 = 13.0 * std::pow(a - b, 2) + 3.0 * std::pow(a - 3.0 * b, 2);
-    double IS1 = 13.0 * std::pow(b - c, 2) + 3.0 * std::pow(b + c, 2);
-    double IS2 = 13.0 * std::pow(c - d, 2) + 3.0 * std::pow(3.0 * c - d, 2);
+    // Reused differences
+    const double ab = a - b;
+    const double bc = b - c;
+    const double cd = c - d;
 
-    // Alpha weights
-    double a0 = 1.0 / std::pow(eps + IS0, 2);
-    double a1 = 6.0 / std::pow(eps + IS1, 2);
-    double a2 = 3.0 / std::pow(eps + IS2, 2);
+    // Smoothness indicators (no pow)
+    const double is0 = c13 * (ab * ab)           + c3 * ((a - 3.0 * b) * (a - 3.0 * b));
+    const double is1 = c13 * (bc * bc)           + c3 * ((b + c)       * (b + c));
+    const double is2 = c13 * (cd * cd)           + c3 * ((3.0 * c - d) * (3.0 * c - d));
 
-    // Nonlinear weights
-    double wSum = a0 + a1 + a2;
-    double w0 = a0 / wSum;
-    double w2 = a2 / wSum;
+    // 1 / (eps + IS)^2  -> compute 1/t then square (no pow)
+    const double t0 = 1.0 / (eps + is0);
+    const double t1 = 1.0 / (eps + is1);
+    const double t2 = 1.0 / (eps + is2);
 
-    // Final WENO psi value
-    return (1.0 / 3.0) * w0 * (a - 2.0 * b + c) + (1.0 / 6.0) * (w2 - 0.5) * (b - 2.0 * c + d);
+    const double a0 =        (t0 * t0);          // 1 * ...
+    const double a1 = c6   * (t1 * t1);          // 6 * ...
+    const double a2 = c3   * (t2 * t2);          // 3 * ...
+
+    // Nonlinear weights with single reciprocal
+    const double invSum = 1.0 / (a0 + a1 + a2);
+    const double w0 = a0 * invSum;
+    const double w2 = a2 * invSum;
+
+    // Stencils reused
+    const double s0 = a - 2.0 * b + c;
+    const double s2 = b - 2.0 * c + d;
+
+    return inv3 * w0 * s0 + inv6 * (w2 - 0.5) * s2;
 }
 
 

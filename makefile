@@ -1,15 +1,19 @@
 # Detect platform
 ifeq ($(OS),Windows_NT)
-    # Use MSVC on Windows
+SHELL := cmd
+.SHELLFLAGS := /C
+endif
+
+ifeq ($(OS),Windows_NT)
     CXX = cl
-    CXXFLAGS = /std:c++17 /nologo /EHsc /W4 /Iinclude /fp:strict
-    RM = rm -rf
-    MKDIR = mkdir -p $(OBJ_DIR)
+    CXXFLAGS = /std:c++17 /nologo /EHsc /W4 /Iinclude /fp:strict /O2 /Zi /Zo /Oy-
+    MKDIR = if not exist "$(OBJ_DIR)" mkdir "$(OBJ_DIR)"
     OUT_EXT = .exe
     OBJ_EXT = .obj
     DEP_EXT = .d
     COMPILE = $(CXX) $(CXXFLAGS) /c $< /Fo$@
-    LINK = $(CXX) $(CXXFLAGS) /Fe:$(TARGET)$(OUT_EXT) $(OBJECTS)
+    LINK = $(CXX) /nologo $(OBJECTS) /Fe:$(TARGET)$(OUT_EXT) /link /DEBUG:FULL /INCREMENTAL:NO
+
 else
     # Use g++ on Linux/macOS
     CXX = g++
@@ -47,7 +51,17 @@ else
 -include $(DEPS)
 endif
 
-clean:
-	$(RM) $(OBJ_DIR) $(TARGET)$(OUT_EXT)
+# --- cross-platform clean ---
+ifeq ($(OS),Windows_NT)
+CLEAN_CMD = \
+    if exist "$(OBJ_DIR)" rmdir /S /Q "$(OBJ_DIR)" && \
+    if exist "$(TARGET)$(OUT_EXT)" del /Q "$(TARGET)$(OUT_EXT)" && \
+    if exist "$(TARGET).pdb" del /Q "$(TARGET).pdb" && \
+    if exist "$(TARGET).ilk" del /Q "$(TARGET).ilk"
+else
+CLEAN_CMD = rm -rf "$(OBJ_DIR)" "$(TARGET)$(OUT_EXT)"
+endif
 
-.PHONY: all clean
+.PHONY: clean
+clean:
+	-$(CLEAN_CMD)

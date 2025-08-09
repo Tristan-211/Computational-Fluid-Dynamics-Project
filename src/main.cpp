@@ -171,9 +171,9 @@ int main() {
     //saveMatrixToFile(sol.Qv, "Qv.csv");
     //saveMatrixToFile(sol.QT, "QT.csv");
 
-    saveMatrixToFile(sol.u, "u.csv");
-    saveMatrixToFile(sol.v, "v.csv");
-    saveMatrixToFile(sol.T, "T.csv");
+    //saveMatrixToFile(sol.u, "u.csv");
+    //saveMatrixToFile(sol.v, "v.csv");
+    //saveMatrixToFile(sol.T, "T.csv");
 
 
 

@@ -9,6 +9,8 @@
 #include <string>
 #include <sstream>
 #include "solution.h"
+#include <chrono>
+#include <cstdio>
 
 // linspace function similar to MATLAB vec = linspace(start,end,num_points)
 std::vector<double> linspace(double start, double end, int num) {
@@ -276,21 +278,40 @@ double maxAbs(const std::vector<std::vector<double>>& mat) {
 
 
 void printTimeProgress(double t, double totalTime) {
-    const int barWidth = 50;
-    double progress = std::min(t / totalTime, 1.0);
-    int pos = static_cast<int>(barWidth * progress);
+    using namespace std::chrono;
+    constexpr int barWidth = 50;
 
-    std::cout << "\r[";
-    for (int i = 0; i < barWidth; ++i) {
-        if (i < pos) std::cout << "=";
-        else if (i == pos) std::cout << ">";
-        else std::cout << " ";
+    static bool   done     = false;
+    static int    lastPct  = -1;
+    static auto   nextAt   = steady_clock::now();
+
+    if (done) return;
+
+    const double p   = std::clamp(t / totalTime, 0.0, 1.0);
+    const int    pct = static_cast<int>(p * 100.0 + 0.5);
+
+    const auto now = steady_clock::now();
+    if (pct < 100 && pct == lastPct && now < nextAt) return;  // throttle
+    lastPct = pct;
+    nextAt  = now + 200ms;
+
+    const int pos = (pct * barWidth) / 100;
+
+    static const char *fills  = "==================================================";
+    static const char *spaces = "                                                  ";
+
+    char buf[192];
+    const int n = std::snprintf(buf, sizeof(buf),
+        "\r[%.*s%.*s] %3d%%",
+        pos, fills, barWidth - pos, spaces, pct, t, totalTime);
+    if (n > 0) std::cout.write(buf, n);
+
+    if (pct >= 100) {
+        std::cout << "\n";  // single final newline
+        std::cout.flush();
+        done = true;        // never print again
     }
-    std::cout << "] " << std::setw(3) << static_cast<int>(progress * 100) << "% ";
-    std::cout << "t = " << std::fixed << std::setprecision(3) << t << "/" << totalTime;
-    std::cout.flush();
 }
-
 
 std::vector<std::vector<double>> zeros(size_t rows, size_t cols) {
     return std::vector<std::vector<double>>(rows, std::vector<double>(cols, 0.0));
