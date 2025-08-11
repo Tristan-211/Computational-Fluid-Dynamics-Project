@@ -6,13 +6,16 @@ endif
 
 ifeq ($(OS),Windows_NT)
     CXX = cl
-    CXXFLAGS = /std:c++17 /nologo /EHsc /W4 /Iinclude /fp:strict /O2 /Zi /Zo /Oy-
+    #CXXFLAGS = /std:c++17 /nologo /EHsc /W4 /Iinclude /fp:strict /O2 /Zi /Zo /Oy- /openmp:llvm
+    CXXFLAGS = /std:c++17 /nologo /EHsc /W4 /Iinclude /O2 /arch:AVX2 /openmp:llvm /Zi /Zo /DNDEBUG
     MKDIR = if not exist "$(OBJ_DIR)" mkdir "$(OBJ_DIR)"
     OUT_EXT = .exe
     OBJ_EXT = .obj
     DEP_EXT = .d
     COMPILE = $(CXX) $(CXXFLAGS) /c $< /Fo$@
-    LINK = $(CXX) /nologo $(OBJECTS) /Fe:$(TARGET)$(OUT_EXT) /link /DEBUG:FULL /INCREMENTAL:NO
+    #LINK = $(CXX) /nologo $(OBJECTS) /Fe:$(TARGET)$(OUT_EXT) /link /DEBUG:FULL /INCREMENTAL:NO
+    LINK = $(CXX) /nologo $(OBJECTS) /Fe:$(TARGET)$(OUT_EXT) /link /LTCG /OPT:REF /OPT:ICF /INCREMENTAL:NO
+    
 
 else
     # Use g++ on Linux/macOS

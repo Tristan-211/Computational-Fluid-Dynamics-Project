@@ -293,7 +293,7 @@ void printTimeProgress(double t, double totalTime) {
     const auto now = steady_clock::now();
     if (pct < 100 && pct == lastPct && now < nextAt) return;  // throttle
     lastPct = pct;
-    nextAt  = now + 200ms;
+    nextAt  = now + 1000ms;
 
     const int pos = (pct * barWidth) / 100;
 

@@ -33,6 +33,7 @@ void bcCN2_T(std::vector<std::vector<double>>& a, std::vector<std::vector<double
 
 
 void bcGS(std::vector<std::vector<double>>& phi);
+void bcGS_flat(std::vector<double>& phi, int nx, int ny);
 
 
 void bcGhost_u(std::vector<std::vector<double>>& u, const Mesh& mesh, const SolverConfig& config, double time);

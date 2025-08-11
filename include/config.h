@@ -4,6 +4,8 @@
 #include <functional>
 #include <array>
 
+enum class EllipticBackend { Serial, OpenMP, CUDA };  
+
 struct BoundaryCondition {
     std::string side;  // "top", "bottom", "left", "right"
     std::pair<double, double> range;  // e.g., {0.5, 1.25}
@@ -52,4 +54,10 @@ struct SolverConfig {
     bool enableEllipticSolver = false;
     bool enableHyperbolicSolver = false;
     bool enableRotors = false;
+
+
+    EllipticBackend ellipticBackend = EllipticBackend::Serial;
+    int             ompThreads     = 0;                  // 0 = auto (use max)
 };
+
+

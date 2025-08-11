@@ -1,5 +1,6 @@
 #include "bc.h"
 #include <iostream>
+#include "MG_flat_types.h"
 
 void bc_u(std::vector<std::vector<double>>& u, const Mesh& mesh, const SolverConfig& config, double time) {
     size_t Nx = mesh.xf.size();
@@ -646,6 +647,23 @@ void bcGS(std::vector<std::vector<double>>& phi){
         phi[i][N-1] = phi[i][N-2];
     }
 }
+
+// Zero-Neumann ghost update (flat, row-major, with ghosts)
+void bcGS_flat(std::vector<double>& phi, int nx, int ny) {
+    // top and bottom ghost rows
+    for (int i = 0; i <= nx + 1; ++i) {
+        phi[idx(i, 0,      nx)] = phi[idx(i, 1,      nx)];   // j = 0   <- 1
+        phi[idx(i, ny + 1, nx)] = phi[idx(i, ny,     nx)];   // j = ny+1<- ny
+    }
+    // left and right ghost columns
+    for (int j = 0; j <= ny + 1; ++j) {
+        phi[idx(0,      j, nx)] = phi[idx(1,      j, nx)];   // i = 0   <- 1
+        phi[idx(nx + 1, j, nx)] = phi[idx(nx,     j, nx)];   // i = nx+1<- nx
+    }
+    // corners are set consistently by the two passes (redundant writes are fine)
+}
+
+
 
 void bcGhost_u(std::vector<std::vector<double>>& u, const Mesh& mesh, const SolverConfig& config, double time) {
     size_t Nx = mesh.xf.size();

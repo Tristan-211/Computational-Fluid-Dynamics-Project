@@ -12,10 +12,16 @@
 #include "multi_grid.h"
 #include "hyperbolic.h"
 #include "IB.h"
+#include "MG_flat.h"
+#include "MG_flat_types.h"  
+#include "omp_utils.h"
+#include <chrono>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
+
+auto t_start = std::chrono::high_resolution_clock::now();
 
 int main() {
 
@@ -35,6 +41,16 @@ int main() {
     config.enableEllipticSolver = true;
     config.enableHyperbolicSolver = true;
     config.enableRotors = true;
+    config.ellipticBackend = EllipticBackend::OpenMP;
+    config.ompThreads = 1;
+
+    #ifdef _OPENMP
+    if (config.ellipticBackend == EllipticBackend::OpenMP) {
+        int nT = choose_omp_threads(config.ompThreads);
+        omp_set_num_threads(nT);
+        omp_set_dynamic(0); // 
+    }
+    #endif
 
 
     // Boundary Condition Structs 
@@ -153,79 +169,23 @@ int main() {
 
 
 
-    //saveMatrixToFile(sol.u, "u.csv");
-    //saveMatrixToFile(sol.v, "v.csv");
-    //saveMatrixToFile(sol.T, "T.csv");
-
-
-
-
     runSolver(sol, mesh, config);
 
-    
+    auto t_end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = t_end - t_start;
+
+    std::cout << "Poisson solve runtime: " << elapsed.count() << " seconds\n";
 
 
-    //calcSourceIB(sol,mesh,config,t);
-
-    //saveMatrixToFile(sol.Qu, "Qu.csv");
-    //saveMatrixToFile(sol.Qv, "Qv.csv");
-    //saveMatrixToFile(sol.QT, "QT.csv");
-
-    //saveMatrixToFile(sol.u, "u.csv");
-    //saveMatrixToFile(sol.v, "v.csv");
-    //saveMatrixToFile(sol.T, "T.csv");
+    saveMatrixToFile(sol.u, "u.csv");
+    saveMatrixToFile(sol.v, "v.csv");
+    saveMatrixToFile(sol.T, "T.csv");
 
 
 
 
 
-    
-    /*
-    double t = 0.0;
- 
-    bool flag = calcDt(t,1.0, config, sol);
-    auto u_old = sol.u;
-    auto v_old = sol.v;
 
-
-    auto [Hu_nm1, Hv_nm1] = hyperbolic_uv_2D(u_old,v_old,config);
-    auto [Hu, Hv] = hyperbolic_uv_2D(sol.u,sol.v,config);
-
-
-    auto Term1 = scalarMultiply(Hu,3.0/2.0);
-    auto Term2 = scalarMultiply(Hu_nm1,1.0/2.0);
-    sol.Qu = elementwiseAdd(sol.Qu,Term1);
-    sol.Qu = elementwiseSubtract(sol.Qu,Term2);
-
-    Term1 = scalarMultiply(Hv,3.0/2.0);
-    Term2 = scalarMultiply(Hv_nm1,1.0/2.0);
-    sol.Qv = elementwiseAdd(sol.Qv,Term1);
-    sol.Qv = elementwiseSubtract(sol.Qv,Term2);
-
-    // Apply step 1 of ADI
-    parabolic_CN1_u(sol, mesh, config, t);
-    parabolic_CN1_v(sol, mesh, config, t);
-
-    // Apply step 2 of ADI
-    parabolic_CN2_u(sol, mesh, config, t);
-    parabolic_CN2_v(sol, mesh, config, t);
-
-    auto HT = hyperbolic_T_WENO_2D(sol, u_old, v_old, t, config, mesh);
-
-    sol.QT = elementwiseAdd(sol.QT,HT);
-    parabolic_CN1_T(sol, mesh, config, t);
-    parabolic_CN2_T(sol, mesh, config, t);
-
-
-    //saveMatrixToFile(sol.phi, "phi.csv");
-    //saveMatrixToFile(sol.Qu, "Qu.csv");
-    //saveMatrixToFile(sol.Qv, "Qv.csv");
-    //saveMatrixToFile(HT, "HT.csv");
-    */
-
-    //saveMatrixToFile(sol.u, "u.csv");
-    //saveMatrixToFile(sol.v, "v.csv");
-    //saveMatrixToFile(sol.T, "T.csv");
 
 
 

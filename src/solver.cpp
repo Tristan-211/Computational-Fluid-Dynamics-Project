@@ -7,6 +7,7 @@
 #include "bc.h"
 #include "hyperbolic.h"
 #include "IB.h"
+#include "MG_flat.h"
 
 using Array2D = std::vector<std::vector<double>>;
 
@@ -124,9 +125,13 @@ void runSolver(Solution& sol, const Mesh& mesh, SolverConfig& config) {
                 auto f = scalarMultiply(divV, 1.0 / config.dt);
 
                 int nIterMax = 100;
-                double epsilon = 1e-8;
+                double epsilon = 1e-6;
+                int nu1 = 1;
+                int nu2 = 1;
+                int nCoarse = 3;
 
-                sol.phi = poissonSolver(sol.phi, f, mesh, nIterMax, epsilon);
+                poisson_solve(sol,f,config,nIterMax,epsilon,nu1,nu2,nCoarse);
+                //sol.phi = poissonSolver(sol.phi, f, mesh, nIterMax, epsilon);
 
                 bcGS(sol.phi);
                 projectV(sol, mesh, config, t);
@@ -178,8 +183,13 @@ Solution initializeSolution(const Mesh& mesh, const SolverConfig& config) {
 
         int nIterMax = 100;
         double epsilon = 1e-8;
+        int nu1 = 1;
+        int nu2 = 1;
+        int nCoarse = 3;
 
-        sol.phi = poissonSolver(sol.phi, f, mesh, nIterMax, epsilon);
+        //sol.phi = poissonSolver(sol.phi, f, mesh, nIterMax, epsilon);
+
+        poisson_solve(sol,f,config,nIterMax,epsilon,nu1,nu2,nCoarse);
 
         bcGS(sol.phi);
         projectV(sol, mesh, config, t);
